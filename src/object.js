@@ -150,27 +150,34 @@ ReflectionObject.prototype.toJSON = /* istanbul ignore next */ function toJSON()
 /**
  * Called when this object is added to a parent.
  * @param {ReflectionObject} parent Parent added to
+ * @param {boolean} [skipRecursiveSetup] If `true`, does not set up recursive features
  * @returns {undefined}
  */
-ReflectionObject.prototype.onAdd = function onAdd(parent) {
+ReflectionObject.prototype.onAdd = function onAdd(parent, skipRecursiveSetup) {
     if (this.parent && this.parent !== parent)
-        this.parent.remove(this);
+        this.parent.remove(this, skipRecursiveSetup);
     this.parent = parent;
     this.resolved = false;
-    var root = parent.root;
-    if (root instanceof Root)
-        root._handleAdd(this);
+
+    if (!skipRecursiveSetup) {
+        var root = parent.root;
+        if (root instanceof Root)
+            root._handleAdd(this);
+    }
 };
 
 /**
  * Called when this object is removed from a parent.
  * @param {ReflectionObject} parent Parent removed from
+ * @param {boolean} [skipRecursiveCleanup] If `true`, does not clean up recursive caches
  * @returns {undefined}
  */
-ReflectionObject.prototype.onRemove = function onRemove(parent) {
-    var root = parent.root;
-    if (root instanceof Root)
-        root._handleRemove(this);
+ReflectionObject.prototype.onRemove = function onRemove(parent, skipRecursiveCleanup) {
+    if (!skipRecursiveCleanup) {
+        var root = parent.root;
+        if (root instanceof Root)
+            root._handleRemove(this);
+    }
     this.parent = null;
     this.resolved = false;
 };

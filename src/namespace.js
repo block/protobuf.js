@@ -133,14 +133,16 @@ function Namespace(name, options) {
     this._needsRecursiveResolve = true;
 }
 
-function clearCache(namespace) {
+function clearCache(namespace, skipRecursiveCleanup) {
     namespace._nestedArray = null;
     namespace._lookupCache = {};
 
-    // Also clear parent caches, since they include nested lookups.
-    var parent = namespace;
-    while(parent = parent.parent) {
-        parent._lookupCache = {};
+    if (!skipRecursiveCleanup) {
+        // Also clear parent caches, since they include nested lookups.
+        var parent = namespace;
+        while(parent = parent.parent) {
+            parent._lookupCache = {};
+        }
     }
     return namespace;
 }
@@ -241,11 +243,12 @@ Namespace.prototype.getEnum = function getEnum(name) {
 /**
  * Adds a nested object to this namespace.
  * @param {ReflectionObject} object Nested object to add
+ * @param {boolean} [skipRecursiveSetup] If `true`, does not set up recursive features
  * @returns {Namespace} `this`
  * @throws {TypeError} If arguments are invalid
  * @throws {Error} If there is already a nested object with this name
  */
-Namespace.prototype.add = function add(object) {
+Namespace.prototype.add = function add(object, skipRecursiveSetup) {
 
     if (!(object instanceof Field && object.extend !== undefined || object instanceof Type  || object instanceof OneOf || object instanceof Enum || object instanceof Service || object instanceof Namespace))
         throw TypeError("object must be a valid nested object");
@@ -259,8 +262,8 @@ Namespace.prototype.add = function add(object) {
                 // replace plain namespace but keep existing nested elements and options
                 var nested = prev.nestedArray;
                 for (var i = 0; i < nested.length; ++i)
-                    object.add(nested[i]);
-                this.remove(prev);
+                    object.add(nested[i], true);
+                this.remove(prev, true);
                 if (!this.nested)
                     this.nested = {};
                 object.setOptions(prev.options, true);
@@ -282,25 +285,28 @@ Namespace.prototype.add = function add(object) {
     this._needsRecursiveFeatureResolution = true;
     this._needsRecursiveResolve = true;
 
-    // Also clear parent caches, since they need to recurse down.
-    var parent = this;
-    while(parent = parent.parent) {
-        parent._needsRecursiveFeatureResolution = true;
-        parent._needsRecursiveResolve = true;
+    if (!skipRecursiveSetup) {
+        // Also clear parent caches, since they need to recurse down.
+        var parent = this;
+        while(parent = parent.parent) {
+            parent._needsRecursiveFeatureResolution = true;
+            parent._needsRecursiveResolve = true;
+        }
     }
-
-    object.onAdd(this);
-    return clearCache(this);
+    object.onAdd(this, skipRecursiveSetup);
+    clearCache(this, skipRecursiveSetup);
+    return this;
 };
 
 /**
  * Removes a nested object from this namespace.
  * @param {ReflectionObject} object Nested object to remove
+ * @param {boolean} [skipRecursiveCleanup] If `true`, does not perform recursive cleanup
  * @returns {Namespace} `this`
  * @throws {TypeError} If arguments are invalid
  * @throws {Error} If `object` is not a member of this namespace
  */
-Namespace.prototype.remove = function remove(object) {
+Namespace.prototype.remove = function remove(object, skipRecursiveCleanup) {
 
     if (!(object instanceof ReflectionObject))
         throw TypeError("object must be a ReflectionObject");
@@ -310,9 +316,9 @@ Namespace.prototype.remove = function remove(object) {
     delete this.nested[object.name];
     if (!Object.keys(this.nested).length)
         this.nested = undefined;
-
-    object.onRemove(this);
-    return clearCache(this);
+    object.onRemove(this, skipRecursiveCleanup);
+    clearCache(this, skipRecursiveCleanup);
+    return this;
 };
 
 /**
