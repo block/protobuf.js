@@ -257,13 +257,13 @@ Namespace.prototype.add = function add(object) {
         if (prev) {
             if (prev instanceof Namespace && object instanceof Namespace && !(prev instanceof Type || prev instanceof Service)) {
                 // replace plain namespace but keep existing nested elements and options
-                var nested = prev.nestedArray;
+                var nested = object.nestedArray;
                 for (var i = 0; i < nested.length; ++i)
-                    object.add(nested[i]);
-                this.remove(prev);
+                    prev.add(nested[i]);
+                if (object.parent) object.parent.remove(object);
                 if (!this.nested)
                     this.nested = {};
-                object.setOptions(prev.options, true);
+                prev.setOptions(object.options, true);
 
             } else
                 throw Error("duplicate name '" + object.name + "' in " + this);
