@@ -129,5 +129,122 @@ tape.test("reflected namespaces", function(test) {
         }
     }, "should create from Type, Enum, Service, extension Field and Namespace JSON");
 
+    root = new protobuf.Root();
+
+    root.addJSON({
+        outer: {
+            nested: {
+                inner: {
+                    nested: {
+                        Message: {
+                            fields: {
+                                amount: { type: "int32", id: 2 },
+                                code: { type: "string", id: 3 }
+                            }
+                        },
+                        Service: {
+                            methods: {
+                                MakeUpdate: {
+                                    requestType: "ExampleRequest",
+                                    responseType: "ExampleResponse"
+                                }
+                            }
+                        },
+                    }
+                },
+                OuterMessage: { fields: {} }
+            }
+        }
+    });
+
+    // store these before calling `addJSON` the second time
+    var originalOuter = root.lookup('outer');
+    var originalInner = originalOuter.lookup('inner');
+    var originalMessage = originalInner.lookup('Message');
+    var originalService = originalInner.lookup('Service');
+    var originalOuterMessage = originalOuter.lookup('OuterMessage');
+
+    root.addJSON({
+        outer: {
+            nested: {
+                inner: {
+                    nested: {
+                        MessageTwo: {
+                            fields: {
+                                amountTwo: { type: "int32", id: 5 },
+                                codeTwo: { type: "string", id: 6 }
+                            }
+                        },
+                        ServiceTwo: {
+                            methods: {
+                                MakeUpdateTwo: {
+                                    requestType: "ExampleRequest",
+                                    responseType: "ExampleResponse"
+                                }
+                            }
+                        },
+                    }
+                },
+                OuterMessageTwo: { fields: {} }
+            }
+        }
+    });
+
+    test.same(root.toJSON().nested.outer, {
+        nested: {
+            inner: {
+                nested: {
+                    Message: {
+                        fields: {
+                            amount: { type: "int32", id: 2 },
+                            code: { type: "string", id: 3 }
+                        }
+                    },
+                    Service: {
+                        methods: {
+                            MakeUpdate: {
+                                requestType: "ExampleRequest",
+                                responseType: "ExampleResponse"
+                            }
+                        }
+                    },
+                    MessageTwo: {
+                        fields: {
+                            amountTwo: { type: "int32", id: 5 },
+                            codeTwo: { type: "string", id: 6 }
+                        }
+                    },
+                    ServiceTwo: {
+                        methods: {
+                            MakeUpdateTwo: {
+                                requestType: "ExampleRequest",
+                                responseType: "ExampleResponse"
+                            }
+                        }
+                    }
+                }
+            },
+            OuterMessage: { fields: {} },
+            OuterMessageTwo: { fields: {} }
+        },
+    }, "should merge deeply nested namespaces");
+
+    // These leaf objects should not be changed by the above merge as they do not conflict
+    test.equal(originalMessage, root.lookup("outer.inner.Message"), "inner.Message not be changed by merge");
+    test.equal(originalService, root.lookup("outer.inner.Service"), "inner.Service not be changed by merge");
+    test.equal(originalOuterMessage, root.lookup("outer.OuterMessage"), "OuterMessage not be changed by merge");
+
+    // Note: these assertions cover an implementation detail. Right now, the Namespace.add recursion
+    // alternates between the original Namespace and the new Namespace at each level of merging.
+    // In our case, the original `outer` is replaced by the new `outer`, but the `inner` namespace remains the same.
+    test.notEqual(originalOuter, root.lookup("outer"), "outer should be changed after merging");
+    test.equal(originalInner, root.lookup("outer.inner"), "inner should not be changed after merging");
+
+    test.equal(originalOuter.parent, null, "removed outer namespace should not have a parent");
+    test.equal(originalInner.parent, root.lookup("outer"), "unremoved inner namespace's parent is the current outer namespace");
+
+    test.equal(originalOuter.lookup("inner"), null, "removed outer should not be able to look up an inner namespace");
+    test.equal(originalOuter.lookup("OuterMessage"), null, "removed outer should not be able to look up an OuterMessage");
+
     test.end();
 });
