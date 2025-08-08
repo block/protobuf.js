@@ -210,9 +210,12 @@ Namespace.prototype.getEnum = function getEnum(name) {
 
 function mergeNamespaces({ host, donor }) {
     var nested = donor.nestedArray;
-    for (var i = 0; i < nested.length; ++i)
+    for (var i = 0; i < nested.length; ++i) {
         host.add(nested[i]);
-    if (donor.parent) donor.parent.remove(donor);
+    }
+    if (donor.parent) {
+        donor.parent.remove(donor);
+    }
     host.setOptions(donor.options, true);
 }
 
@@ -245,8 +248,9 @@ Namespace.prototype.add = function add(object) {
     if (!reusing) {
         this.nested[object.name] = object;
         object.onAdd(this);
+        clearCache(this);
     }
-    return clearCache(this);
+    return this;
 };
 
 /**
