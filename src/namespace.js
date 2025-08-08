@@ -208,6 +208,14 @@ Namespace.prototype.getEnum = function getEnum(name) {
     throw Error("no such enum: " + name);
 };
 
+function mergeNamespaces({ host, donor }) {
+    var nested = donor.nestedArray;
+    for (var i = 0; i < nested.length; ++i)
+        host.add(nested[i]);
+    if (donor.parent) donor.parent.remove(donor);
+    host.setOptions(donor.options, true);
+}
+
 /**
  * Adds a nested object to this namespace.
  * @param {ReflectionObject} object Nested object to add
@@ -228,14 +236,7 @@ Namespace.prototype.add = function add(object) {
             if (prev instanceof Namespace && object instanceof Namespace && !(prev instanceof Type || prev instanceof Service)) {
                 // we're going to keep using `prev`
                 reusing = true;
-                // replace plain namespace but keep existing nested elements and options
-                var nested = object.nestedArray;
-                for (var i = 0; i < nested.length; ++i)
-                    prev.add(nested[i]);
-                if (object.parent) object.parent.remove(object);
-                if (!this.nested)
-                    this.nested = {};
-                prev.setOptions(object.options, true);
+                mergeNamespaces({ host: prev, donor: object });
             } else
                 throw Error("duplicate name '" + object.name + "' in " + this);
         }
