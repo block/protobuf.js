@@ -208,15 +208,15 @@ Namespace.prototype.getEnum = function getEnum(name) {
     throw Error("no such enum: " + name);
 };
 
-function mergeNamespaces({ host, donor }) {
+function mergeNamespaces({ recipient, donor }) {
     var nested = donor.nestedArray;
     for (var i = 0; i < nested.length; ++i) {
-        host.add(nested[i]);
+        recipient.add(nested[i]);
     }
     if (donor.parent) {
         donor.parent.remove(donor);
     }
-    host.setOptions(donor.options, true);
+    recipient.setOptions(donor.options, true);
 }
 
 /**
@@ -227,25 +227,25 @@ function mergeNamespaces({ host, donor }) {
  * @throws {Error} If there is already a nested object with this name
  */
 Namespace.prototype.add = function add(object) {
+
     if (!(object instanceof Field && object.extend !== undefined || object instanceof Type  || object instanceof OneOf || object instanceof Enum || object instanceof Service || object instanceof Namespace))
         throw TypeError("object must be a valid nested object");
 
-    var reusing = false;
+    var merged = false;
     if (!this.nested)
         this.nested = {};
     else {
         var prev = this.get(object.name);
         if (prev) {
             if (prev instanceof Namespace && object instanceof Namespace && !(prev instanceof Type || prev instanceof Service)) {
-                // we're going to keep using `prev`
-                reusing = true;
-                mergeNamespaces({ host: prev, donor: object });
+                merged = true;
+                mergeNamespaces({ recipient: prev, donor: object });
             } else
                 throw Error("duplicate name '" + object.name + "' in " + this);
         }
     }
 
-    if (!reusing) {
+    if (!merged) {
         this.nested[object.name] = object;
         object.onAdd(this);
         clearCache(this);
