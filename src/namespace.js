@@ -110,7 +110,7 @@ function Namespace(name, options) {
     this._nestedArray = null;
 }
 
-function clearCache(namespace, skipRecursiveCleanup) {
+function clearCache(namespace) {
     namespace._nestedArray = null;
     return namespace;
 }
@@ -245,10 +245,11 @@ Namespace.prototype.add = function add(object, skipRecursiveSetup) {
                 throw Error("duplicate name '" + object.name + "' in " + this);
         }
     }
+
     if (!merged) {
         this.nested[object.name] = object;
         object.onAdd(this, skipRecursiveSetup);
-        clearCache(this, skipRecursiveSetup);
+        clearCache(this);
     }
     return this;
 };
@@ -271,9 +272,9 @@ Namespace.prototype.remove = function remove(object, skipRecursiveCleanup) {
     delete this.nested[object.name];
     if (!Object.keys(this.nested).length)
         this.nested = undefined;
+
     object.onRemove(this, skipRecursiveCleanup);
-    clearCache(this, skipRecursiveCleanup);
-    return this;
+    return clearCache(this);
 };
 
 /**

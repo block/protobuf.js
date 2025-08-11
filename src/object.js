@@ -125,22 +125,24 @@ ReflectionObject.prototype.onAdd = function onAdd(parent, skipRecursiveSetup) {
 
     if (!skipRecursiveSetup) {
         var root = parent.root;
-        if (root instanceof Root)
+        if (root instanceof Root) {
             root._handleAdd(this);
+        }
     }
 };
 
 /**
  * Called when this object is removed from a parent.
  * @param {ReflectionObject} parent Parent removed from
- * @param {boolean} [skipRecursiveCleanup] If `true`, does not clean up recursive caches
+ * @param {boolean} [skipRecursiveCleanup] If `true`, does not perform recursive cleanup
  * @returns {undefined}
  */
 ReflectionObject.prototype.onRemove = function onRemove(parent, skipRecursiveCleanup) {
     if (!skipRecursiveCleanup) {
         var root = parent.root;
-        if (root instanceof Root)
+        if (root instanceof Root) {
             root._handleRemove(this);
+        }
     }
     this.parent = null;
     this.resolved = false;
