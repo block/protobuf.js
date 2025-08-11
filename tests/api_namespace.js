@@ -216,5 +216,114 @@ tape.test("namespace merging with nested namespaces", function(test) {
     test.equal(squad.parent, org2, "squad parent is still org2");
     test.same(root.lookup('company.org2.squad'), squad, "the squad object is accessible from root");
 
+    // Begin testing deeply nested namespaces
+    root = new protobuf.Root();
+
+    root.addJSON({
+        outer: {
+            nested: {
+                inner: {
+                    nested: {
+                        Message: {
+                            fields: {
+                                amount: { type: "int32", id: 2 },
+                                code: { type: "string", id: 3 }
+                            }
+                        },
+                        Service: {
+                            methods: {
+                                MakeUpdate: {
+                                    requestType: "ExampleRequest",
+                                    responseType: "ExampleResponse"
+                                }
+                            }
+                        },
+                    }
+                },
+                OuterMessage: { fields: {} }
+            }
+        }
+    });
+
+    // store these before calling `addJSON` the second time
+    var originalOuter = root.lookup('outer');
+    var originalInner = originalOuter.lookup('inner');
+    var originalMessage = originalInner.lookup('Message');
+    var originalService = originalInner.lookup('Service');
+    var originalOuterMessage = originalOuter.lookup('OuterMessage');
+
+    root.addJSON({
+        outer: {
+            nested: {
+                inner: {
+                    nested: {
+                        MessageTwo: {
+                            fields: {
+                                amountTwo: { type: "int32", id: 5 },
+                                codeTwo: { type: "string", id: 6 }
+                            }
+                        },
+                        ServiceTwo: {
+                            methods: {
+                                MakeUpdateTwo: {
+                                    requestType: "ExampleRequest",
+                                    responseType: "ExampleResponse"
+                                }
+                            }
+                        },
+                    }
+                },
+                OuterMessageTwo: { fields: {} }
+            }
+        }
+    });
+
+    // Verify that the merged structure is as expected
+    test.same(root.toJSON().nested.outer, {
+        nested: {
+            inner: {
+                nested: {
+                    Message: {
+                        fields: {
+                            amount: { type: "int32", id: 2 },
+                            code: { type: "string", id: 3 }
+                        }
+                    },
+                    Service: {
+                        methods: {
+                            MakeUpdate: {
+                                requestType: "ExampleRequest",
+                                responseType: "ExampleResponse"
+                            }
+                        }
+                    },
+                    MessageTwo: {
+                        fields: {
+                            amountTwo: { type: "int32", id: 5 },
+                            codeTwo: { type: "string", id: 6 }
+                        }
+                    },
+                    ServiceTwo: {
+                        methods: {
+                            MakeUpdateTwo: {
+                                requestType: "ExampleRequest",
+                                responseType: "ExampleResponse"
+                            }
+                        }
+                    }
+                }
+            },
+            OuterMessage: { fields: {} },
+            OuterMessageTwo: { fields: {} }
+        },
+    }, "should merge deeply nested namespaces");
+
+    // Verify that the original namespaces references are still accessible via lookup from root
+    test.equal(originalOuter, root.lookup("outer"), "outer ref unchanged by merge");
+    test.equal(originalInner, root.lookup("outer.inner"), "inner ref unchanged by merge");
+    test.equal(originalMessage, root.lookup("outer.inner.Message"), "inner.Message ref unchanged by merge");
+    test.equal(originalService, root.lookup("outer.inner.Service"), "inner.Service ref unchanged by merge");
+    test.equal(originalOuterMessage, root.lookup("outer.OuterMessage"), "OuterMessage ref unchanged by merge");
+
     test.end();
 });

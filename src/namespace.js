@@ -211,10 +211,10 @@ Namespace.prototype.getEnum = function getEnum(name) {
 function mergeNamespaces({ recipient, donor }) {
     var nested = donor.nestedArray;
     for (var i = 0; i < nested.length; ++i) {
-        recipient.add(nested[i]);
+        recipient.add(nested[i], true);
     }
     if (donor.parent) {
-        donor.parent.remove(donor);
+        donor.parent.remove(donor, true);
     }
     recipient.setOptions(donor.options, true);
 }
@@ -222,11 +222,12 @@ function mergeNamespaces({ recipient, donor }) {
 /**
  * Adds a nested object to this namespace.
  * @param {ReflectionObject} object Nested object to add
+ * @param {boolean} [skipRecursiveSetup] If `true`, does not set up recursive features
  * @returns {Namespace} `this`
  * @throws {TypeError} If arguments are invalid
  * @throws {Error} If there is already a nested object with this name
  */
-Namespace.prototype.add = function add(object) {
+Namespace.prototype.add = function add(object, skipRecursiveSetup) {
 
     if (!(object instanceof Field && object.extend !== undefined || object instanceof Type  || object instanceof OneOf || object instanceof Enum || object instanceof Service || object instanceof Namespace))
         throw TypeError("object must be a valid nested object");
@@ -247,7 +248,7 @@ Namespace.prototype.add = function add(object) {
 
     if (!merged) {
         this.nested[object.name] = object;
-        object.onAdd(this);
+        object.onAdd(this, skipRecursiveSetup);
         clearCache(this);
     }
     return this;
@@ -256,11 +257,12 @@ Namespace.prototype.add = function add(object) {
 /**
  * Removes a nested object from this namespace.
  * @param {ReflectionObject} object Nested object to remove
+ * @param {boolean} [skipRecursiveCleanup] If `true`, does not perform recursive cleanup
  * @returns {Namespace} `this`
  * @throws {TypeError} If arguments are invalid
  * @throws {Error} If `object` is not a member of this namespace
  */
-Namespace.prototype.remove = function remove(object) {
+Namespace.prototype.remove = function remove(object, skipRecursiveCleanup) {
 
     if (!(object instanceof ReflectionObject))
         throw TypeError("object must be a ReflectionObject");
@@ -271,7 +273,7 @@ Namespace.prototype.remove = function remove(object) {
     if (!Object.keys(this.nested).length)
         this.nested = undefined;
 
-    object.onRemove(this);
+    object.onRemove(this, skipRecursiveCleanup);
     return clearCache(this);
 };
 
