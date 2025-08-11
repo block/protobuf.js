@@ -766,20 +766,22 @@ export abstract class NamespaceBase extends ReflectionObject {
     /**
      * Adds a nested object to this namespace.
      * @param object Nested object to add
+     * @param [skipRecursiveSetup] If `true`, does not set up recursive features
      * @returns `this`
      * @throws {TypeError} If arguments are invalid
      * @throws {Error} If there is already a nested object with this name
      */
-    public add(object: ReflectionObject): Namespace;
+    public add(object: ReflectionObject, skipRecursiveSetup?: boolean): Namespace;
 
     /**
      * Removes a nested object from this namespace.
      * @param object Nested object to remove
+     * @param [skipRecursiveCleanup] If `true`, does not perform recursive cleanup
      * @returns `this`
      * @throws {TypeError} If arguments are invalid
      * @throws {Error} If `object` is not a member of this namespace
      */
-    public remove(object: ReflectionObject): Namespace;
+    public remove(object: ReflectionObject, skipRecursiveCleanup?: boolean): Namespace;
 
     /**
      * Defines additial namespaces within this one if not yet existing.
@@ -904,14 +906,16 @@ export abstract class ReflectionObject {
     /**
      * Called when this object is added to a parent.
      * @param parent Parent added to
+     * @param [skipRecursiveSetup] If `true`, does not set up recursive features
      */
-    public onAdd(parent: ReflectionObject): void;
+    public onAdd(parent: ReflectionObject, skipRecursiveSetup?: boolean): void;
 
     /**
      * Called when this object is removed from a parent.
      * @param parent Parent removed from
+     * @param [skipRecursiveCleanup] If `true`, does not perform recursive cleanup
      */
-    public onRemove(parent: ReflectionObject): void;
+    public onRemove(parent: ReflectionObject, skipRecursiveCleanup?: boolean): void;
 
     /**
      * Resolves this objects type references.
