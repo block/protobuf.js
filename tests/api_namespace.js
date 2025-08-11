@@ -131,3 +131,90 @@ tape.test("reflected namespaces", function(test) {
 
     test.end();
 });
+
+tape.test("namespace merging with nested namespaces", function(test) {
+
+    // Create a root namespace
+    var root = new protobuf.Root();
+
+    // Create first namespace using fromJSON with company.org.team structure
+    root.addJSON({
+        company: {
+            nested: {
+                org: {
+                    nested: {
+                        team: {
+                            nested: {
+                                sales: {
+                                    fields: {
+                                        name: { type: "string", id: 1 },
+                                        id: { type: "int32", id: 2 }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Create second namespace using fromJSON with same company.org.team structure
+    var companyNS2 = protobuf.Namespace.fromJSON("company", {
+        nested: {
+            org: {
+                nested: {
+                    team: {
+                        nested: {
+                            billing: {
+                                fields: {
+                                    name: { type: "string", id: 1 },
+                                    id: { type: "int32", id: 2 }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            org2: {
+                nested: {
+                    squad: {
+                        fields: {
+                            name: { type: "string", id: 1 },
+                            id: { type: "int32", id: 2 }
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Store lookups from the root after ingesting json initially
+    const companyOriginal = root.lookup("company");
+    const orgOriginal = root.lookup("company.org");
+    const teamOriginal = root.lookup("company.org.team");
+
+    const orgNS2 = companyNS2.lookup("org");
+    const org2 = companyNS2.lookup("org2");
+    const squad = companyNS2.lookup("org2.squad");
+
+    // add the second namespace to the root, forcing merge
+    root.add(companyNS2);
+
+    // Verify that the original namespaces are still accessible via lookup
+    test.same(root.lookup("company"), companyOriginal, "should still return original company namespace");
+    test.same(root.lookup("company.org"), orgOriginal, "should still return original org namespace");
+    test.same(root.lookup("company.org.team"), teamOriginal, "should still return original team namespace");
+    test.same(root.lookup("company.org.team").nestedArray.map(o => o.name), ['sales', 'billing'], "merged team children are both present");
+
+    // merge resulted in companyNS2 and orgNS2 being discarded.
+    test.equal(companyNS2.parent, null, "companyNS2 does not have a parent");
+    test.equal(orgNS2.parent, null, "orgNS2 does not have a parent");
+
+    // org2 should have been added as-is to companyOriginal
+    test.equal(org2.parent, companyOriginal, "org2 parent is now companyOriginal");
+    test.equal(squad.parent, org2, "squad parent is still org2");
+    test.same(root.lookup('company.org2.squad'), squad, "the squad object is accessible from root");
+
+    test.end();
+});
